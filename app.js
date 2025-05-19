@@ -1,7 +1,8 @@
-const express = require('express')
+const express = require('express') // require -> commonJS
 const crypto = require('node:crypto')
 const cors = require('cors')
-const movies = require('./schemas/movies')
+
+const movies = require('./movies.json')
 const { validateMovie, validatePartialMovie } = require('./schemas/movies')
 
 const app = express()
@@ -28,12 +29,14 @@ app.use(cors({
 }))
 app.disable('x-powered-by') // deshabilitar el header X-Powered-By: Express
 
-app.get('/', (req, res) => {
-  res.json({ message: 'hola mundo' })
-})
+// métodos normales: GET/HEAD/POST
+// métodos complejos: PUT/PATCH/DELETE
 
+// CORS PRE-Flight
+// OPTIONS
+
+// Todos los recursos que sean MOVIES se identifica con /movies
 app.get('/movies', (req, res) => {
-  res.header('Access-Control-Allow-Origin', '*')
   const { genre } = req.query
   if (genre) {
     const filteredMovies = movies.filter(
@@ -54,15 +57,21 @@ app.get('/movies/:id', (req, res) => {
 app.post('/movies', (req, res) => {
   const result = validateMovie(req.body)
 
-  if (result.error) {
+  if (!result.success) {
+    // 422 Unprocessable Entity
     return res.status(400).json({ error: JSON.parse(result.error.message) })
   }
 
+  // en base de datos
   const newMovie = {
-    id: crypto.randomUUID(),
+    id: crypto.randomUUID(), // uuid v4
     ...result.data
   }
+
+  // Esto no sería REST, porque estamos guardando
+  // el estado de la aplicación en memoria
   movies.push(newMovie)
+
   res.status(201).json(newMovie)
 })
 
